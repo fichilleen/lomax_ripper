@@ -33,6 +33,14 @@ def artist_transform(artist):
     return ' '.join((artist[1], artist[0]))
 
 
+def clean_special_characters(base_str):
+    ''' We don't want anything that might confuse paths '''
+    # Some of these shouldn't matter on POSIX paths, but let's be safe
+    # and clean
+    for c in ('/', '"', "'", "*", '?', '\\'):
+        base_str = base_str.replace(c, '_')
+    return base_str
+
 
 # TODO: We might want the year tag, but I'm too lazy and drunk to parse
 # it now
@@ -40,6 +48,7 @@ def per_track(tds):
     title, mp3_url, artist = tds
     fn = '%s - %s.mp3' % (artist, title)
     with open(fn, 'wb') as mp3out:
+        print mp3_url
         mp3out.write(urlopen(mp3_url).read())
     mp3 = eyed3.load(fn)
     mp3.tag.artist = artist
@@ -65,7 +74,7 @@ for i, track in enumerate(parent_t.findChildren('tr')):
 
         track = track.findChildren()
         # Convert to str from unicode
-        title = track[2].getText()
+        title = clean_special_characters(track[2].getText())
         mp3 = mp3_pattern.findall(str(track))[0]
         td_group.extend((title, mp3))
 
@@ -75,7 +84,7 @@ for i, track in enumerate(parent_t.findChildren('tr')):
             td_group.append(FORCE_ARTIST)
         else:
             artist = artist_transform(track.getText().split('[')[1][:-1])
-            td_group.append(artist)
+            td_group.append(clean_special_characters(artist))
 
 per_track(td_group)
 
